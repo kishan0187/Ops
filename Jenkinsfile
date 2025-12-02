@@ -2,7 +2,9 @@ pipeline {
     agent any
 
     environment {
-        IMAGE_NAME = "akhil8078/ops-app" 
+        IMAGE_NAME = "akhil8078/ops-app"
+        // Reference the credential ID we just created
+        KUBECONFIG_ID = 'kubeconfig-file'
     }
 
     stages {
@@ -23,11 +25,14 @@ pipeline {
 
         stage('Deploy to Kubernetes') {
             steps {
-                script {
-                    echo 'Deploying to Local Kubernetes...'
-                    // Added --validate=false to bypass Windows/kubectl version mismatches
-                    bat 'kubectl apply -f k8s/ --validate=false'
-                    echo 'Deployment successful! App is running locally.'
+                // This wrapper creates a temporary file with your cluster config
+                withCredentials([file(credentialsId: env.KUBECONFIG_ID, variable: 'KUBECONFIG')]) {
+                    script {
+                        echo 'Deploying to Local Kubernetes...'
+                        // The KUBECONFIG env var is now set, so kubectl knows where to go!
+                        bat 'kubectl apply -f k8s/ --validate=false'
+                        echo 'Deployment successful! App is running locally.'
+                    }
                 }
             }
         }
