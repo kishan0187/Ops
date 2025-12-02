@@ -16,20 +16,17 @@ pipeline {
             steps {
                 script {
                     echo 'Building Docker Image...'
-                    // Build and tag it as "latest" so K8s can find it easily
                     bat "docker build -t %IMAGE_NAME%:latest ."
                 }
             }
         }
 
-        // --- PUSH STAGE DELETED (No Login Required) ---
-
         stage('Deploy to Kubernetes') {
             steps {
                 script {
                     echo 'Deploying to Local Kubernetes...'
-                    // This uses the image we just built locally
-                    bat 'kubectl apply -f k8s/'
+                    // Added --validate=false to bypass Windows/kubectl version mismatches
+                    bat 'kubectl apply -f k8s/ --validate=false'
                     echo 'Deployment successful! App is running locally.'
                 }
             }
@@ -41,7 +38,7 @@ pipeline {
             echo "Pipeline failed."
         }
         success {
-            echo "Success! No login was needed."
+            echo "Success! Project i Assessment Complete."
         }
     }
 }
