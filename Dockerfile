@@ -1,20 +1,24 @@
 # File: Dockerfile
-# Using the official TensorFlow image to avoid large downloads and timeouts.
+# Use the official TensorFlow image to avoid the massive download step,
+# which caused the "Read timed out" errors in previous runs.
 FROM tensorflow/tensorflow:2.10.0
 
 # Set working directory inside the container
 WORKDIR /app
 
-# Install remaining dependencies
+# Copy the dependency file
 COPY requirements.txt .
-# pip will install Flask, yfinance, and scikit-learn
-RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the rest of the application code and the model file (.h5)
+# Install dependencies with an increased timeout to handle slow downloads
+# Requirements.txt contains: Flask, yfinance, scikit-learn
+RUN pip install --no-cache-dir -r requirements.txt --timeout 600
+
+# Copy the rest of the application code (app.py, prediction.py) and the model file (lstm_model.h5)
 COPY . .
 
-# Expose the port Flask runs on
+# Expose the port the Flask app runs on
 EXPOSE 5000
 
-# Start the application
+# Command to start the application
+# Ensure your app.py is fixed to app.run(host='0.0.0.0', ...)
 CMD ["python", "app.py"]
