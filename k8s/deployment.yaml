@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: stock-prediction-deployment
+  labels:
+    app: stock-predictor
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: stock-predictor
+  template:
+    metadata:
+      labels:
+        app: stock-predictor
+    spec:
+      containers:
+      - name: stock-prediction-container
+        image: akhil8078/ops-app:latest
+        imagePullPolicy: Never  # <--- IMPORTANT: Uses the local image you just built
+        ports:
+        - containerPort: 5000
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 5000
+          initialDelaySeconds: 15
+          periodSeconds: 20
