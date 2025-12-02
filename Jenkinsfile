@@ -2,7 +2,10 @@ pipeline {
     agent any
 
     environment {
-        PYTHON = "python3"   // change to "python" if that's what your system uses
+        // Change this to your actual Docker Hub username/repo
+        IMAGE_NAME = "akhil8078/ops-app" 
+        // Ensure this ID exists in your Jenkins Credentials
+        DOCKER_CREDS = credentials('dockerhub-creds-id') 
     }
 
     stages {
@@ -12,56 +15,31 @@ pipeline {
             }
         }
 
-        stage('Set up venv') {
+        stage('Build Docker Image') {
             steps {
-                sh """
-                    ${PYTHON} -m venv venv
-                    . venv/bin/activate
-                    pip install --upgrade pip
-                    if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-                """
+                script {
+                    echo 'Building Docker Image...'
+                    // We use "bat" because your Jenkins is on Windows
+                    bat "docker build -t %IMAGE_NAME%:%BUILD_NUMBER% ."
+                }
             }
         }
 
-        stage('Run tests') {
+        stage('Push to Docker Hub') {
             steps {
-                sh """
-                    . venv/bin/activate
-                    # change this to pytest or whatever you use
-                    echo "No tests yet, add pytest here."
-                """
+                script {
+                    echo 'Logging into Docker Hub...'
+                    // Windows batch syntax for login
+                    bat "docker login -u %DOCKER_CREDS_USR% -p %DOCKER_CREDS_PSW%"
+                    
+                    echo 'Pushing specific version...'
+                    bat "docker push %IMAGE_NAME%:%BUILD_NUMBER%"
+                    
+                    echo 'Tagging and pushing "latest"...'
+                    bat "docker tag %IMAGE_NAME%:%BUILD_NUMBER% %IMAGE_NAME%:latest"
+                    bat "docker push %IMAGE_NAME%:latest"
+                }
             }
-        }
-
-        stage('Deploy') {
-            when {
-                branch 'main'   // only deploy when pushing to main
-            }
-            steps {
-                sh """
-                    . venv/bin/activate
-                    # EXAMPLES – pick ONE style and implement it properly:
-
-                    # 1) Local run (for learning only, not production)
-                    # pkill -f "python app.py" || true
-                    # nohup ${PYTHON} app.py > app.log 2>&1 &
-
-                    # 2) If using a deploy.sh script:
-                    # chmod +x deploy.sh
-                    # ./deploy.sh
-
-                    echo "Deploy step placeholder – wire this to your real server."
-                """
-            }
-        }
-    }
-
-    post {
-        failure {
-            echo "Pipeline failed. Fix your sh*t and push again."
-        }
-        success {
-            echo "Pipeline completed successfully."
         }
     }
 }
