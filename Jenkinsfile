@@ -2,10 +2,7 @@ pipeline {
     agent any
 
     environment {
-        // Change this to your actual Docker Hub username/repo
         IMAGE_NAME = "akhil8078/ops-app" 
-        // Ensure this ID exists in your Jenkins Credentials
-        DOCKER_CREDS = credentials('dockerhub-creds-id') 
     }
 
     stages {
@@ -19,27 +16,32 @@ pipeline {
             steps {
                 script {
                     echo 'Building Docker Image...'
-                    // We use "bat" because your Jenkins is on Windows
-                    bat "docker build -t %IMAGE_NAME%:%BUILD_NUMBER% ."
+                    // Build and tag it as "latest" so K8s can find it easily
+                    bat "docker build -t %IMAGE_NAME%:latest ."
                 }
             }
         }
 
-        stage('Push to Docker Hub') {
+        // --- PUSH STAGE DELETED (No Login Required) ---
+
+        stage('Deploy to Kubernetes') {
             steps {
                 script {
-                    echo 'Logging into Docker Hub...'
-                    // Windows batch syntax for login
-                    bat "docker login -u %DOCKER_CREDS_USR% -p %DOCKER_CREDS_PSW%"
-                    
-                    echo 'Pushing specific version...'
-                    bat "docker push %IMAGE_NAME%:%BUILD_NUMBER%"
-                    
-                    echo 'Tagging and pushing "latest"...'
-                    bat "docker tag %IMAGE_NAME%:%BUILD_NUMBER% %IMAGE_NAME%:latest"
-                    bat "docker push %IMAGE_NAME%:latest"
+                    echo 'Deploying to Local Kubernetes...'
+                    // This uses the image we just built locally
+                    bat 'kubectl apply -f k8s/'
+                    echo 'Deployment successful! App is running locally.'
                 }
             }
+        }
+    }
+
+    post {
+        failure {
+            echo "Pipeline failed."
+        }
+        success {
+            echo "Success! No login was needed."
         }
     }
 }
