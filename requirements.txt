@@ -1,5 +1,4 @@
+# File: requirements.txt
 Flask
 yfinance
-numpy
-tensorflow
 scikit-learn
